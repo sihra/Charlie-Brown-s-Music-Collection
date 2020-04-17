@@ -14,7 +14,7 @@ DBS_NAME = 'testdb'
 COLLECTION_NAME = 'crime'
 FIELDS = {'date': True, 'stop-and-search': True, '_id': True}
 PARAMETERS = {"date" : "2020-10", "stop-and-search" : [ "Hogwarts"]}
-UPDATE = {"_id": {"$oid": "5e98dd1af88346ea89a9d5cd"}}, {"date": "2020-10", "stop-and-search": ["Hogsmeade"]}
+#UPDATE = {"stop-and-search" : [ "Hogwarts"]}, {"date": "2020-10", "stop-and-search": ["Hogsmeade"]}, upsert:True, multi:True
 DELETE = {"stop-and-search" : [ "Hogwarts"]}
 
 @app.route("/")
@@ -50,7 +50,7 @@ def insertCollection():
 def updateCollection():
     connection = MongoClient(MONGODB_HOST, MONGODB_PORT)
     collection = connection[DBS_NAME][COLLECTION_NAME]
-    doc = collection.update(UPDATE)
+    doc = collection.update({"stop-and-search" : [ "Hogwarts"]}, {"date": "2020-10", "stop-and-search": ["Hogsmeade"]}, upsert=False)
     projects = collection.find(projection=FIELDS)
     json_projects = []
     for project in projects:
