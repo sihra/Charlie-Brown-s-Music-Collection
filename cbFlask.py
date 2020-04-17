@@ -5,6 +5,7 @@ from pymongo import MongoClient
 import json
 from bson import json_util
 from bson.json_util import dumps
+from bson import ObjectId
 
 app = Flask(__name__)
 
@@ -15,7 +16,7 @@ COLLECTION_NAME = 'crime'
 FIELDS = {'date': True, 'stop-and-search': True, '_id': True}
 PARAMETERS = {"date" : "2020-10", "stop-and-search" : [ "Hogwarts"]}
 #UPDATE = {"stop-and-search" : [ "Hogwarts"]}, {"date": "2020-10", "stop-and-search": ["Hogsmeade"]}, upsert:True, multi:True
-DELETE = {"stop-and-search" : [ "Hogwarts"]}
+#DELETE = {"_id": ObjectId("5e98dd1af88346ea89a9d5cd")}
 
 @app.route("/")
 def index():
@@ -63,7 +64,7 @@ def updateCollection():
 def deleteCollection():
     connection = MongoClient(MONGODB_HOST, MONGODB_PORT)
     collection = connection[DBS_NAME][COLLECTION_NAME]
-    doc = collection.deleteOne(DELETE)
+    doc = collection.remove({'_id': ObjectId("5e98ddfa710a30dd710ec970")})
     projects = collection.find(projection=FIELDS)
     json_projects = []
     for project in projects:
