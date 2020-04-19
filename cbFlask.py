@@ -1,5 +1,7 @@
 from flask import Flask
 from flask import render_template
+#from flask import request
+#from flask import jsonify
 import pymongo
 from pymongo import MongoClient
 import json
@@ -11,9 +13,9 @@ app = Flask(__name__)
 
 MONGODB_HOST = 'localhost'
 MONGODB_PORT = 27021
-DBS_NAME = 'testdb'
-COLLECTION_NAME = 'crime'
-FIELDS = {'date': True, 'stop-and-search': True, '_id': True}
+DBS_NAME = 'yelp'
+COLLECTION_NAME = 'yelp'
+FIELDS = {'user_id': True, 'name': True, 'review_count': True, 'yelping_since': True, 'useful': True, 'funny': True, 'cool': True, 'elite': True, 'friends': True, 'fans': True, 'average_stars': True, 'compliment_hot': True, 'compliment_more': True, 'compliment_profile': True, 'compliment_cute': True, 'complement_list': True, 'compliment_not': True, 'copmliment_plain': True, 'compliment_cool': True, 'compliment_funny': True, 'compliment_writer': True, 'compliment_note': True}
 PARAMETERS = {"date" : "2020-10", "stop-and-search" : [ "Hogwarts"]}
 #UPDATE = {"stop-and-search" : [ "Hogwarts"]}, {"date": "2020-10", "stop-and-search": ["Hogsmeade"]}, upsert:True, multi:True
 #DELETE = {"_id": ObjectId("5e98dd1af88346ea89a9d5cd")}
@@ -26,7 +28,7 @@ def index():
 def readCollection():
     connection = MongoClient(MONGODB_HOST, MONGODB_PORT)
     collection = connection[DBS_NAME][COLLECTION_NAME]
-    projects = collection.find(projection=FIELDS)
+    projects = collection.find(projection=FIELDS).limit(10)
     json_projects = []
     for project in projects:
         json_projects.append(project)
@@ -36,23 +38,28 @@ def readCollection():
 
 @app.route("/insertCollection")
 def insertCollection():
+    #insert_name = request.form['insert_name']
     connection = MongoClient(MONGODB_HOST, MONGODB_PORT)
     collection = connection[DBS_NAME][COLLECTION_NAME]
-    doc = collection.insert(PARAMETERS)
-    projects = collection.find(projection=FIELDS)
+    doc = collection.insert({"name":"Charlie Brown 157C", "review_count": 100})
+    #projects = collection.find(projection=FIELDS)
+    projects = collection.find({"name":"Charlie Brown 157C"}, {'user_id': 1, 'name': 1, 'review_count': 1, 'yelping_since': 1, 'useful': 1, 'funny': 1, 'cool': 1, 'elite': 1, 'friends': 1, 'fans': 1, 'average_stars': 1, 'compliment_hot': 1, 'compliment_more': 1, 'compliment_profile': 1, 'compliment_cute': 1, 'complement_list': 1, 'compliment_not': 1, 'copmliment_plain': 1, 'compliment_cool': 1, 'compliment_funny': 1, 'compliment_writer': 1, 'compliment_note': 1}).limit(10)
     json_projects = []
     for project in projects:
         json_projects.append(project)
     json_projects = json.dumps(json_projects, default=json_util.default)
     connection.close()
-    return json_projects
+    return json_projects 
+    
     
 @app.route("/updateCollection")
 def updateCollection():
     connection = MongoClient(MONGODB_HOST, MONGODB_PORT)
     collection = connection[DBS_NAME][COLLECTION_NAME]
-    doc = collection.update({"stop-and-search" : [ "Hogwarts"]}, {"date": "2020-10", "stop-and-search": ["Hogsmeade"]}, upsert=False)
-    projects = collection.find(projection=FIELDS)
+    #doc = collection.update({"name" : "Charlie Brown 157C"}, {"review_count": 101})
+    doc = collection.update_one({"name": "Charlie Brown 157C"}, {"$set": {"review_count": 101}})
+    projects = collection.find({"name":"Charlie Brown 157C"}).limit(10)
+    #projects = collection.find({}, {'name': 1}, {$limit:10})
     json_projects = []
     for project in projects:
         json_projects.append(project)
@@ -64,8 +71,20 @@ def updateCollection():
 def deleteCollection():
     connection = MongoClient(MONGODB_HOST, MONGODB_PORT)
     collection = connection[DBS_NAME][COLLECTION_NAME]
-    doc = collection.remove({'_id': ObjectId("5e98ddfa710a30dd710ec970")})
-    projects = collection.find(projection=FIELDS)
+    doc = collection.remove({"name" : "Charlie Brown 157C"})
+    projects = collection.find({"name":"Charlie Brown 157C"}).limit(10)
+    json_projects = []
+    for project in projects:
+        json_projects.append(project)
+    json_projects = json.dumps(json_projects, default=json_util.default)
+    connection.close()
+    return json_projects
+
+@app.route("/findPopularUser")
+def findTina():
+    connection = MongoClient(MONGODB_HOST, MONGODB_PORT)
+    collection = connection[DBS_NAME][COLLECTION_NAME]
+    projects = collection.find({"fans": {"$gte": 1000}},{"_id" : 0, "name": 1, "fans": 1}).sort([("fans", pymongo.DESCENDING)]).limit(10)
     json_projects = []
     for project in projects:
         json_projects.append(project)
