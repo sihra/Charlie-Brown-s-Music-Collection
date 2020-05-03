@@ -1,25 +1,89 @@
-<!DOCTYPE html>
-    <html>
-    <head>
-        <title>Team Snoopy</title>
-    </head>
-    <body>
+{%  block head %}
+<title>Team Snoopy</title>
+<link rel="stylesheet" type= "text/css" href="{{ url_for('static', filename='style.css') }}"/>
+<link href="https://stackpath.bootstrapcdn.com/bootswatch/4.3.1/darkly/bootstrap.min.css" rel="stylesheet" integrity="sha384-w+8Gqjk9Cuo6XH9HKHG5t5I1VR4YBNdPt/29vwgfZR485eoEJZ8rJRbm3TR32P6k" crossorigin="anonymous"/>
+<link rel="shortcut icon" href="/snoopy.jpg" type="image/jpg"/>
+<style>
+ #my_bar {
+    width: 10i0%;
+    height: 45px;
+    overflow: hidden;
+    padding-bottom: 0px;
+    margin-left: 5px
+}
 
-        <h1> Charlie Brown's Yelp Collection</h1>
+#my_bar span {
+    height: 100%;
+    display: inline;
+    overflow: hidden;
+    padding-left: 0px
+}
+
+#my_input {
+    height: 100%;
+    width: 100%;
+    text-align: center;
+    display: inline;
+    margin-right: 5px    
+}
+
+#my_input_submit {
+    height: 60%;
+    margin-right: 5px
+}
+
+</style>
+
+{% endblock %}
+{% block body %}
+
+        <h1> Team Snoopy and Charlie Brown's Yelp Collection</h1>
 
     <h3>Read the Yelp Collection!</h3>
-     <a href="/readCollection"><input type="button" value="Read Collection"></a>
-    
+     <a href="/readCollection">
+         <input type="button" class="btn btn-primary btn-lg mb-3" value="Read Collection">
+     </a>
+
     <h3>Insert a document with the name "Charlie Brown 157C" in the collection!</h3>
-    <a href="/insertCollection"><input type="button" value="Insert Collection"></a>
+    <a href="/insertCollection">
+        <input type="button" class="btn btn-primary btn-lg mb-3" value="Insert Collection">
+    </a>
 
     <h3>Update the document's review_count to 101!</h3>
-     <a href="/updateCollection"><input type="button" value="Update Collection"></a>
+     <a href="/updateCollection">
+         <input type="button"  class="btn btn-primary btn-lg mb-3" value="Update Collection">
+     </a>
 
      <h3>Delete the document with the name "Charlie Brown 157C"!</h3>
-        <a href="/deleteCollection"><input type="button" value="Delete Collection"></a>
+        <a href="/deleteCollection">
+            <input type="button"  class="btn btn-primary btn-lg mb-3" value="Delete Collection">
+        </a>
 
     <h3>Find all of the users who possess more than 1000 fans! It's limited to 10 in descending order from the user with the most fans.</h3>
-        <a href="/findPopularUser"><input type="button" value="Find Popular User"></a>
-    </body>
-</html>
+        <a href="/findPopularUser">
+            <input type="button" class="btn btn-primary btn-lg mb-3" value="Find Popular User">
+        </a>
+
+    <h3>Gurdev - Find users with more than a user specified amount of friends or less than a user specified amount of friends</h3>
+    <h3>Input the amount of friend </h3>
+
+    <!-- This Stack Overflow Helped: https://stackoverflow.com/questions/25677538/html-select-and-input-in-one-line-->
+    <form action="{{ url_for('findFriendAmount') }}" method="POST">
+        <div id="my_bar">
+            <div id="my_input">Find Users who have a friend count of </label>
+                <select name="select_friend" id="specified">
+                  <option value="eq">Equal To</option>
+                  <option value="lt">Less Than</option>
+                  <option value="gt">Greater Than</option>
+                </select>
+            </div>
+            <span>
+            <input type="number" min="0" step="1" name="friendAmount" placeholder="Integer Amount" id="my_input_submit" value="Submit">
+            </span>
+            <h6 id="my_input">Friends!</h6>
+            <input type="submit">
+        </div>
+    </form>
+
+
+{%  endblock %}

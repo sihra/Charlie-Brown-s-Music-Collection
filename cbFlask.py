@@ -92,5 +92,49 @@ def findTina():
     connection.close()
     return json_projects
 
+# User Specified: (2) user_id (String > Object ID) >> Return __Name__ has not/been friends with __Name__ for __Years__
+# Query: Find if a user specified Yelp user is a friend of another user specified Yelp user
+@app.route("/findRelationship")
+def findTina():
+    connection = MongoClient(MONGODB_HOST, MONGODB_PORT)
+    collection = connection[DBS_NAME][COLLECTION_NAME]
+    projects = collection.find({"fans": {"$gte": 1000}},{"_id" : 0, "name": 1, "fans": 1}).sort([("fans", pymongo.DESCENDING)]).limit(10)
+    json_projects = []
+    for project in projects:
+        json_projects.append(project)
+    json_projects = json.dumps(json_projects, default=json_util.default)
+    connection.close()
+    return json_projects
+
+# User Specified: (User Option) Less than, greater than, equal to (User Specified Integer) amount of friends.
+# Query: Find users with more than a user specified amount of friends or less than a user specified amount of friends
+# Stack Overflow for HTML User Input: https://stackoverflow.com/questions/11556958/sending-data-from-html-form-to-a-python-script-in-flask
+@app.route('/findFriendAmount', methods=['GET', 'POST'])
+def findFriendAmount():
+    connection = MongoClient(MONGODB_HOST, MONGODB_PORT)
+    collection = connection[DBS_NAME][COLLECTION_NAME]
+    
+    friendAmount = request.form['friendAmount']
+    select = request.form.get('select_friend')
+
+    # Define projects to fill query based on >, <, or ==
+    projects = []  
+
+    if(select == "eq"):
+        projects = collection.find({"friends": {"$eq": friendAmount}},{"_id" : 0, "name": 1, "friends": 1}).sort([("friends", pymongo.DESCENDING)]).limit(20)
+    elif(select == "lt"):
+        projects = collection.find({"friends": {"$lt": friendAmount}},{"_id" : 0, "name": 1, "friends": 1}).sort([("friends", pymongo.DESCENDING)]).limit(20)
+    else:
+        projects = collection.find({"friends": {"$gt": friendAmount}},{"_id" : 0, "name": 1, "friends": 1}).sort([("friends", pymongo.DESCENDING)]).limit(20)
+
+    json_projects = []
+    for project in projects:
+        json_projects.append(project)
+    json_projects = json.dumps(json_projects, default=json_util.default)
+    connection.close()
+    return json_projects
+
+yelp.find({"friends": {"$gt": friendAmount}},{"_id" : 0, "name": 1, "friends": 1}).limit(20)
+
 if __name__ == "__main__":
     app.run(host='0.0.0.0',port=5000,debug=True)
