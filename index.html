@@ -65,7 +65,6 @@
         </a>
 
     <h3>Gurdev - Find users with more than a user specified amount of friends or less than a user specified amount of friends</h3>
-    <h3>Input the amount of friend </h3>
 
     <!-- This Stack Overflow Helped: https://stackoverflow.com/questions/25677538/html-select-and-input-in-one-line-->
     <form action="{{ url_for('findFriendAmount') }}" method="POST">
@@ -81,6 +80,42 @@
             <input type="number" min="0" step="1" name="friendAmount" placeholder="Integer Amount" id="my_input_submit" value="Submit">
             </span>
             <h6 id="my_input">Friends!</h6>
+            <input type="submit">
+        </div>
+    </form>
+
+    <h3>Gurdev - Find if a user specified Yelp user is a friend of another user specified Yelp user</h3>
+
+    <!-- This Stack Overflow Helped: https://stackoverflow.com/questions/25677538/html-select-and-input-in-one-line-->
+    <!-- Double text input: https://www.w3schools.com/tags/tag_input.asp -->
+    <form action="{{ url_for('findFriendship') }}" method="POST">
+        <div id="my_bar">
+            <div id="my_input">
+                <h6 id="my_input"> Is the user with an ID of </h6>
+                <input type="text" name="user_id_one" placeholder="User ID" id="my_input_submit">
+                <h6 id="my_input"> friends with a user with an ID of</h6>
+            </div>
+            <span>
+            <input type="text" name="user_id_two" placeholder="User ID" id="my_input_submit">
+            </span>
+            <h6 id="my_input">?</h6>
+            <input type="submit">
+        </div>
+    </form>
+
+<h3>Gurdev - Find users with the largest review count and user specified average</h3>
+
+    <!-- This Stack Overflow Helped: https://stackoverflow.com/questions/25677538/html-select-and-input-in-one-line-->
+    <!-- Double text input: https://www.w3schools.com/tags/tag_input.asp -->
+    <form action="{{ url_for('findAvg') }}" method="POST">
+        <div id="my_bar">
+            <div id="my_input">
+                <h6 id="my_input"> Find users with a review average of</h6>
+            </div>
+            <span>
+            <input type="number" min="0.01" step="0.01" name="avg_review" placeholder="Average Stars" id="my_input_submit">
+            </span>
+            <h6 id="my_input">sorted by how many reviews they've written!</h6>
             <input type="submit">
         </div>
     </form>

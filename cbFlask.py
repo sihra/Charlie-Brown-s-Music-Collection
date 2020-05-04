@@ -92,23 +92,11 @@ def findTina():
     connection.close()
     return json_projects
 
-# User Specified: (2) user_id (String > Object ID) >> Return __Name__ has not/been friends with __Name__ for __Years__
-# Query: Find if a user specified Yelp user is a friend of another user specified Yelp user
-@app.route("/findRelationship")
-def findTina():
-    connection = MongoClient(MONGODB_HOST, MONGODB_PORT)
-    collection = connection[DBS_NAME][COLLECTION_NAME]
-    projects = collection.find({"fans": {"$gte": 1000}},{"_id" : 0, "name": 1, "fans": 1}).sort([("fans", pymongo.DESCENDING)]).limit(10)
-    json_projects = []
-    for project in projects:
-        json_projects.append(project)
-    json_projects = json.dumps(json_projects, default=json_util.default)
-    connection.close()
-    return json_projects
-
 # User Specified: (User Option) Less than, greater than, equal to (User Specified Integer) amount of friends.
 # Query: Find users with more than a user specified amount of friends or less than a user specified amount of friends
 # Stack Overflow for HTML User Input: https://stackoverflow.com/questions/11556958/sending-data-from-html-form-to-a-python-script-in-flask
+# Stack Overflow for gt/lt/eq: https://stackoverflow.com/questions/48847800/mongo-db-aggregation-array-size-greater-than-match
+# Stack Overflow sort Aggregate: https://stackoverflow.com/questions/36566166/sort-the-result-from-a-pymongo-query
 @app.route('/findFriendAmount', methods=['GET', 'POST'])
 def findFriendAmount():
     connection = MongoClient(MONGODB_HOST, MONGODB_PORT)
@@ -119,6 +107,15 @@ def findFriendAmount():
 
     # Define projects to fill query based on >, <, or ==
     projects = []  
+
+
+    # Friend_Amount: { $cond: { if: { $isArray: "$friends" }, then: { $size: "$friends" }, else: "NA"} }
+
+    projects = collection.aggregate([
+    { $project: { "_id" : 0, "name": 1, "friends": 1, Friend_Amount: { $gt: [{ $size: "$friends" }, friendAmount ]}}},
+    { $match: { moreThanFive : true }}
+    ])
+
 
     if(select == "eq"):
         projects = collection.find({"friends": {"$eq": friendAmount}},{"_id" : 0, "name": 1, "friends": 1}).sort([("friends", pymongo.DESCENDING)]).limit(20)
@@ -134,7 +131,41 @@ def findFriendAmount():
     connection.close()
     return json_projects
 
-yelp.find({"friends": {"$gt": friendAmount}},{"_id" : 0, "name": 1, "friends": 1}).limit(20)
+#yelp.find({"friends": {"$gt": friendAmount}},{"_id" : 0, "name": 1, "friends": 1}).limit(20)
+
+# User Specified: (2) user_id (String > Object ID) >> Return __Name__ has not/been friends with __Name__ for __Years__
+# Query: Find if a user specified Yelp user is a friend of another user specified Yelp user
+@app.route("/findFriendship", methods=['POST'])
+def findFriendship():
+    connection = MongoClient(MONGODB_HOST, MONGODB_PORT)
+    collection = connection[DBS_NAME][COLLECTION_NAME]
+
+    userid_one = request.form['user_id_one']
+    userid_two = request.form['user_id_two']
+
+    #projects = collection.find({"fans": {"$gte": 1000}},{"_id" : 0, "name": 1, "fans": 1}).sort([("fans", pymongo.DESCENDING)]).limit(10)
+    projects = collection.find({"user_id": userid_one, "friends": userid_two});
+    if not projects:
+        return "Nothing here"
+    connection.close()
+    return "Always here"
+
+# Query:  Find users with the largest review count and user specified average
+@app.route("/findAvg", methods=['POST'])
+def findAvg():
+    connection = MongoClient(MONGODB_HOST, MONGODB_PORT)
+    collection = connection[DBS_NAME][COLLECTION_NAME]
+
+    avg_review= request.form['avg_review']
+
+    projects = collection.find({"average_stars": avg_review},{"_id" : 0, "name": 1, "average_stars": 1, "review_count": 1}).sort([("review_count", pymongo.DESCENDING)]).limit(20)
+
+    json_projects = []
+    for project in projects:
+        json_projects.append(project)
+    json_projects = json.dumps(json_projects, default=json_util.default)
+    connection.close()
+    return json_projects
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0',port=5000,debug=True)
