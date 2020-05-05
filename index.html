@@ -1,8 +1,6 @@
 {%  block head %}
-<title>Team Snoopy</title>
 <link rel="stylesheet" type= "text/css" href="{{ url_for('static', filename='style.css') }}"/>
 <link href="https://stackpath.bootstrapcdn.com/bootswatch/4.3.1/darkly/bootstrap.min.css" rel="stylesheet" integrity="sha384-w+8Gqjk9Cuo6XH9HKHG5t5I1VR4YBNdPt/29vwgfZR485eoEJZ8rJRbm3TR32P6k" crossorigin="anonymous"/>
-<link rel="shortcut icon" href="/snoopy.jpg" type="image/jpg"/>
 <style>
  #my_bar {
     width: 10i0%;
@@ -43,6 +41,184 @@
      <a href="/readCollection">
          <input type="button" class="btn btn-primary btn-lg mb-3" value="Read Collection">
      </a>
+    <h3>Find X Users with more than Y reviews!
+    <div>
+    <form action="{{ url_for('findReviews') }}" method = "POST">
+            <input type="text" class="form-control" name = "numberOfReviews" id="numberOfReviews"  placeholder="Enter number of reviews">
+            <small id="reviewNumber" class="form-text text-muted"></small>
+            <input type="text" class="form-control" id="reviewOutputAmount" name = "reviewOutputAmount"  placeholder="Enter number of entries to return">
+            <small id="reviewOutAmount" class="form-text text-muted"></small>
+            <input type="submit" class="btn btn-primary btn-lg mb-3" value="Find Popular User">
+</form>
+</div>
+ <h3>Find Users with ending with X letters!
+        <div>
+        <form action="{{ url_for('findUsername') }}" method = "POST">
+            <input type="text" class="form-control" name = "characters" id="characters"  placeholder="Enter characters ex:  tina with find all names ending with tina">
+            <small id="reviewNumber2" class="form-text text-muted"></small>
+            <input type="text" class="form-control" id="reviewOutputAmount" name = "characterOutputAmount"  placeholder="Enter number of entries to return">
+            <small id="reviewOutAmount2" class="form-text text-muted"></small>
+            <input type="submit" class="btn btn-primary btn-lg mb-3" value="Find Users">
+</form>
+</div>
+
+<h3>Find Users with fans between X and Y!
+        <div>
+        <form action="{{ url_for('findPopularUsers') }}" method = "POST">
+            <input type="text" class="form-control" name = "fanMin" id="fanMin" placeholder="Enter minimum value  Default is 1">
+            <small id="minNum" class="form-text text-muted"></small>
+            <input type="text" class="form-control" id="fanMax" name = "fanMax"  placeholder="Enter max value Default is 10000">
+            <small id="reviewOutAmount3" class="form-tekxt text-muted"></small>
+            <input type="text" class="form-control" id="reviewOutputAmount" name = "fansOutputAmount"  placeholder="Enter number of entries to return Default is 10">
+        <small id="reviewOutAmount4" class="form-text text-muted"></small>
+            <input type="submit" class="btn btn-primary btn-lg mb-3" value="Find Users">
+</form>
+</div>
+
+<h3>Find The Number of a Specific Compliment Type  has Users with Name X!
+        <div>
+<form action="{{ url_for('findCompliments') }}" method = "POST">
+<div class="custom-control custom-radio">
+  <input type="radio" class="custom-control-input" value="compliment_hot"  id="defaultGroupExample1" name="groupOfDefaultRadios">
+  <label class="custom-control-label" for="defaultGroupExample1">Hot</label>
+</div>
+
+<!-- Group of default radios - option 2 -->
+<div class="custom-control custom-radio">
+  <input type="radio" class="custom-control-input" value="compliment_more" id="defaultGroupExample2" name="groupOfDefaultRadios" checked>
+  <label class="custom-control-label" for="defaultGroupExample2">More</label>
+</div>
+
+<!-- Group of default radios - option 3 -->
+<div class="custom-control custom-radio">
+  <input type="radio" class="custom-control-input" value="compliment_profile" id="defaultGroupExample3" name="groupOfDefaultRadios">
+  <label class="custom-control-label" for="defaultGroupExample3">Profile</label>
+</div>
+<div class="custom-control custom-radio">
+  <input type="radio" class="custom-control-input" value="compliment_cute" id="defaultGroupExample4" name="groupOfDefaultRadios">
+  <label class="custom-control-label" for="defaultGroupExample4">Cute</label>
+</div>
+
+<!-- Group of default radios - option 2 -->
+<div class="custom-control custom-radio">
+  <input type="radio" class="custom-control-input" id="defaultGroupExample5" value="compliment_list" name="groupOfDefaultRadios" checked>
+  <label class="custom-control-label" for="defaultGroupExample5">List</label>
+</div>
+
+<!-- Group of default radios - option 3 -->
+<div class="custom-control custom-radio">
+  <input type="radio" class="custom-control-input" id="defaultGroupExample6" value="compliment_not" name="groupOfDefaultRadios">
+  <label class="custom-control-label" for="defaultGroupExample6">Not</label>
+</div>
+<div class="custom-control custom-radio">
+  <input type="radio" class="custom-control-input" id="defaultGroupExample7" value="compliment_plain" name="groupOfDefaultRadios">
+  <label class="custom-control-label" for="defaultGroupExample7">Plain</label>
+</div>
+
+<!-- Group of default radios - option 2 -->
+<div class="custom-control custom-radio">
+  <input type="radio" class="custom-control-input" id="defaultGroupExample8" value="compliment_cool" name="groupOfDefaultRadios" checked>
+  <label class="custom-control-label" for="defaultGroupExample8">Cool</label>
+</div>
+
+<!-- Group of default radios - option 3 -->
+<div class="custom-control custom-radio">
+  <input type="radio" class="custom-control-input" id="defaultGroupExample9" value="compliment_funny" name="groupOfDefaultRadios">
+  <label class="custom-control-label" for="defaultGroupExample9">Funny</label>
+</div>
+<div class="custom-control custom-radio">
+  <input type="radio" class="custom-control-input" id="defaultGroupExample10" value="compliment_writer" name="groupOfDefaultRadios">
+  <label class="custom-control-label" for="defaultGroupExample10">Writer</label>
+</div>
+
+<!-- Group of default radios - option 2 -->
+<div class="custom-control custom-radio">
+  <input type="radio" class="custom-control-input" id="defaultGroupExample11"value="compliment_note"  name="groupOfDefaultRadios" checked>
+  <label class="custom-control-label" for="defaultGroupExample11">Note</label>
+</div>
+            <input type="text" class="form-control" id="reviewOutputAmount" name = "complimentOutputAmount"  placeholder="Enter number of entries to return Default is 10">
+            <small id="reviewOutAmount4" class="form-text text-muted"></small>
+            <input type="text" class="form-control" id="reviewOutputAmount" name = "complimentName"  placeholder="Enter First Name">
+            <small id="reviewOutAmount4" class="form-text text-muted"></small>
+
+            <input type="submit" class="btn btn-primary btn-lg mb-3" value="Find Users">
+</form>
+</div>
+
+<!-- Find Friendship Query -->
+    <h3>Gurdev - Find if a user specified Yelp user is a friend of another user specified Yelp user</h3>
+
+    <!-- This Stack Overflow Helped: https://stackoverflow.com/questions/25677538/html-select-and-input-in-one-line-->
+    <!-- Double text input: https://www.w3schools.com/tags/tag_input.asp -->
+    <form action="{{ url_for('findFriendship') }}" method="POST">
+        
+            
+                <h6 > Is the user with an ID of </h6>
+                <input type="text" name="user_id_one" placeholder="User ID">
+                <h6> friends with a user with an ID of</h6>
+            
+            
+            <input type="text" name="user_id_two" placeholder="User ID">
+            
+            <h6>?</h6>
+            <input type="submit">
+        
+    </form>
+
+    <!-- # Query:  Find users with the largest review count and user specified average -->
+    <h3>Gurdev - Find users with the largest review count and user specified average</h3>
+
+    <!-- This Stack Overflow Helped: https://stackoverflow.com/questions/25677538/html-select-and-input-in-one-line-->
+    <!-- Double text input: https://www.w3schools.com/tags/tag_input.asp -->
+    <form action="{{ url_for('findAvg') }}" method="POST">
+            <h6> Find users with a review average of</h6>
+            <input type="number" min="0.01" step="0.01" name="avg_review" placeholder="Average Stars">
+            <h6>sorted by how many reviews they've written!</h6>
+        <input type="submit">
+    </form>
+
+
+    <!-- Query : Find amount of friends -->
+
+        <h3>Gurdev - Find users with more than a user specified amount of friends or less than a user specified amount of friends</h3>
+
+    <!-- This Stack Overflow Helped: https://stackoverflow.com/questions/25677538/html-select-and-input-in-one-line-->
+    <form action="{{ url_for('findFriendAmount') }}" method="POST">
+            <label>Find Users who have a friend count of </label>
+                <select name="select_friend" id="specified">
+                  <option value="eq">Equal To</option>
+                  <option value="lt">Less Than</option>
+                  <option value="gt">Greater Than</option>
+                </select>
+            <input type="number" min="0" step="1" name="friendAmount" placeholder="Integer Amount" value="Submit">
+            <h6>Friends!</h6>
+            <input type="submit">
+    </form>
+
+
+    <!-- Query Find the user specified Yelp user with the most reviews within the time they’ve been yelping -->
+    <h3>Find the user specified Yelp user with the most reviews within the time they’ve been yelping!</h3>
+     <a href="/mostReviewYelping">
+         <input type="button" class="btn btn-primary btn-lg mb-3" value="Highest Review to Time Ratio">
+     </a>
+
+     <!-- Query: Find users who joined in a user specified year and how long they have been members -->
+    <h3>Find users who joined in a user specified year and how long they have been members
+        <div>
+        <form action="{{ url_for('findYearOfYelp') }}" method = "POST">
+            <input type="number" min="2003" max="2020" step="1"  class="form-control" id="reviewOutputAmount" name = "yearOfYelp"  placeholder="Enter the year for Yelp users">
+            <small id="reviewOutAmount" class="form-text text-muted"></small>
+            <input type="submit" class="btn btn-primary btn-lg mb-3" value="Find the member time of Yelp Users">
+    </form>
+    </div>
+    
+    <h3>Insert into database</h3>
+    <!-- Insert into class -->
+    <a href="/insertCollection">
+        <input type="button" class="btn btn-primary btn-lg mb-3" value="Insert Collection">
+    </a>
+
+
 
     <h3>Insert a document with the name "Charlie Brown 157C" in the collection!</h3>
     <a href="/insertCollection">
@@ -63,62 +239,13 @@
         <a href="/findPopularUser">
             <input type="button" class="btn btn-primary btn-lg mb-3" value="Find Popular User">
         </a>
-
-    <h3>Gurdev - Find users with more than a user specified amount of friends or less than a user specified amount of friends</h3>
-
-    <!-- This Stack Overflow Helped: https://stackoverflow.com/questions/25677538/html-select-and-input-in-one-line-->
-    <form action="{{ url_for('findFriendAmount') }}" method="POST">
-        <div id="my_bar">
-            <div id="my_input">Find Users who have a friend count of </label>
-                <select name="select_friend" id="specified">
-                  <option value="eq">Equal To</option>
-                  <option value="lt">Less Than</option>
-                  <option value="gt">Greater Than</option>
-                </select>
-            </div>
-            <span>
-            <input type="number" min="0" step="1" name="friendAmount" placeholder="Integer Amount" id="my_input_submit" value="Submit">
-            </span>
-            <h6 id="my_input">Friends!</h6>
-            <input type="submit">
-        </div>
-    </form>
-
-    <h3>Gurdev - Find if a user specified Yelp user is a friend of another user specified Yelp user</h3>
-
-    <!-- This Stack Overflow Helped: https://stackoverflow.com/questions/25677538/html-select-and-input-in-one-line-->
-    <!-- Double text input: https://www.w3schools.com/tags/tag_input.asp -->
-    <form action="{{ url_for('findFriendship') }}" method="POST">
-        <div id="my_bar">
-            <div id="my_input">
-                <h6 id="my_input"> Is the user with an ID of </h6>
-                <input type="text" name="user_id_one" placeholder="User ID" id="my_input_submit">
-                <h6 id="my_input"> friends with a user with an ID of</h6>
-            </div>
-            <span>
-            <input type="text" name="user_id_two" placeholder="User ID" id="my_input_submit">
-            </span>
-            <h6 id="my_input">?</h6>
-            <input type="submit">
-        </div>
-    </form>
-
-<h3>Gurdev - Find users with the largest review count and user specified average</h3>
-
-    <!-- This Stack Overflow Helped: https://stackoverflow.com/questions/25677538/html-select-and-input-in-one-line-->
-    <!-- Double text input: https://www.w3schools.com/tags/tag_input.asp -->
-    <form action="{{ url_for('findAvg') }}" method="POST">
-        <div id="my_bar">
-            <div id="my_input">
-                <h6 id="my_input"> Find users with a review average of</h6>
-            </div>
-            <span>
-            <input type="number" min="0.01" step="0.01" name="avg_review" placeholder="Average Stars" id="my_input_submit">
-            </span>
-            <h6 id="my_input">sorted by how many reviews they've written!</h6>
-            <input type="submit">
-        </div>
-    </form>
-
-
+    <br>
+<form action="{{ url_for('findReviews') }}" method = "post">
+ <div class="form-group">
+        <input type="text" class="form-control" id="numberOfFans"  placeholder="Enter number of fans">
+        <small id="fanNumber" class="form-text text-muted"></small>
+            <input type="text" class="form-control" id="outputAmount"  placeholder="Enter number of entries to return">
+        <small id="fanOutAmount" class="form-text text-muted"></small>
+ </div>
+</form>
 {%  endblock %}

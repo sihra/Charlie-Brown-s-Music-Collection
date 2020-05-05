@@ -1,7 +1,7 @@
-from flask import Flask
-from flask import render_template
-#from flask import request
-#from flask import jsonify
+from flask import Flask, render_template
+from flask import request
+# from flask import jsonify
+import re
 import pymongo
 from pymongo import MongoClient
 import json
@@ -11,19 +11,225 @@ from bson import ObjectId
 
 app = Flask(__name__)
 
+
+
 MONGODB_HOST = 'localhost'
 MONGODB_PORT = 27021
-DBS_NAME = 'yelp'
-COLLECTION_NAME = 'yelp'
-FIELDS = {'user_id': True, 'name': True, 'review_count': True, 'yelping_since': True, 'useful': True, 'funny': True, 'cool': True, 'elite': True, 'friends': True, 'fans': True, 'average_stars': True, 'compliment_hot': True, 'compliment_more': True, 'compliment_profile': True, 'compliment_cute': True, 'complement_list': True, 'compliment_not': True, 'copmliment_plain': True, 'compliment_cool': True, 'compliment_funny': True, 'compliment_writer': True, 'compliment_note': True}
-PARAMETERS = {"date" : "2020-10", "stop-and-search" : [ "Hogwarts"]}
-#UPDATE = {"stop-and-search" : [ "Hogwarts"]}, {"date": "2020-10", "stop-and-search": ["Hogsmeade"]}, upsert:True, multi:True
-#DELETE = {"_id": ObjectId("5e98dd1af88346ea89a9d5cd")}
+DBS_NAME = 'project'
+COLLECTION_NAME = 'project'
+FIELDS = {'user_id': True, 'name': True, 'review_count': True, 'yelping_since': True, 'useful': True, 'funny': True,
+          'cool': True, 'elite': True, 'friends': True, 'fans': True, 'average_stars': True, 'compliment_hot': True,
+          'compliment_more': True, 'compliment_profile': True, 'compliment_cute': True, 'complement_list': True,
+          'compliment_not': True, 'copmliment_plain': True, 'compliment_cool': True, 'compliment_funny': True,
+          'compliment_writer': True, 'compliment_note': True}
+PARAMETERS = {"date": "2020-10", "stop-and-search": ["Hogwarts"]}
+
+
+# UPDATE = {"stop-and-search" : [ "Hogwarts"]}, {"date": "2020-10", "stop-and-search": ["Hogsmeade"]}, upsert:True, multi:True
+# DELETE = {"_id": ObjectId("5e98dd1af88346ea89a9d5cd")}
+
+def makeSureValueIsInt(val, defaultVal):
+     try:
+        val = int (val)
+     except ValueError:
+        return defaultVal
+     return  val
+
 
 @app.route("/")
 def index():
     return render_template("index.html")
 
+###############################
+@app.route("/findReviews", methods=['POST'])  #amount
+def findReviews():
+    connection = MongoClient(MONGODB_HOST, MONGODB_PORT)
+    collection = connection[DBS_NAME][COLLECTION_NAME]
+    output_amount = makeSureValueIsInt(request.form['reviewOutputAmount'], 10)
+    review_amount = makeSureValueIsInt(request.form['numberOfReviews'], 250)
+    projects = collection.find({"review_count": {"$gte": review_amount}}, {"_id": 0, "name": 1, "review_count": 1}).sort(
+        [("fans", pymongo.ASCENDING)]).limit(output_amount)
+    json_projects = []
+    for project in projects:
+        json_projects.append(project)
+    json_projects = json.dumps(json_projects, default=json_util.default)
+    connection.close()
+
+    return render_template("QueryTemplate.html", json_projects = json_projects)
+
+
+
+@app.route("/findUsername", methods =['POST']) #userName, amount
+def findUsername():
+    connection = MongoClient(MONGODB_HOST, MONGODB_PORT)
+    collection = connection[DBS_NAME][COLLECTION_NAME]
+    output_amount = makeSureValueIsInt(request.form['characterOutputAmount'], 10)
+    user_name = request.form['characters']
+    projects = collection.find({"name": re.compile(user_name, re.IGNORECASE)}, {"_id" : 0, "name": 1, "yelping_since": 1}).limit(output_amount)
+    json_projects = []
+    for project in projects:
+        json_projects.append(project)
+    json_projects = json.dumps(json_projects, default=json_util.default)
+    connection.close()
+    return render_template("QueryTemplate.html", json_projects = json_projects)
+
+@app.route("/findPopularUser", methods = ['POST']) #fansMin, fansMax, amount
+def findPopularUsers():
+    connection = MongoClient(MONGODB_HOST, MONGODB_PORT)
+    collection = connection[DBS_NAME][COLLECTION_NAME]
+    amount = makeSureValueIsInt(request.form['fansOutputAmount'], 10)
+    fansMin = makeSureValueIsInt(request.form['fanMin'], 1)
+    fansMax = makeSureValueIsInt(request.form['fanMax'], 10000)
+    
+    projects = collection.find({"fans": {"$gte": fansMin, "$lte": fansMax}}, {"_id": 0, "name": 1, "fans": 1}).sort(
+        [("fans", pymongo.DESCENDING)]).limit(amount)
+    json_projects = []
+    for project in projects:
+        json_projects.append(project)
+    json_projects = json.dumps(json_projects, default=json_util.default)
+    connection.close()
+    return render_template("QueryTemplate.html", json_projects=json_projects)
+
+'''
+
+
+@app.route("/findJoinDate") #date, amount
+def findJoinDate():
+'''
+
+@app.route("/findCompliments", methods = ['POST']) #name, amount
+def findCompliments():
+    connection = MongoClient(MONGODB_HOST, MONGODB_PORT)
+    collection = connection[DBS_NAME][COLLECTION_NAME]
+    radio = request.form['groupOfDefaultRadios']
+    amount = makeSureValueIsInt(request.form['complimentOutputAmount'], 10)
+    name = request.form['complimentName']
+    projects = collection.find({"name" : name},{"_id": 0, "name" : 1, radio: 1}).limit(amount)
+    json_projects = []
+    for project in projects:
+        json_projects.append(project)
+    json_projects = json.dumps(json_projects, default=json_util.default)
+    connection.close()
+    return render_template("QueryTemplate.html", json_projects=json_projects)
+
+
+################## Find Friendship Query ####################
+# User Specified: (2) user_id (String > Object ID) >> Return __Name__ has not/been friends with __Name__ for __Years__
+# Query: Find if a user specified Yelp user is a friend of another user specified Yelp user
+@app.route("/findFriendship", methods=['POST'])
+def findFriendship():
+    connection = MongoClient(MONGODB_HOST, MONGODB_PORT)
+    collection = connection[DBS_NAME][COLLECTION_NAME]
+
+    userid_one = request.form['user_id_one']
+    userid_two = str(request.form['user_id_two'])
+    #projects = collection.find({"fans": {"$gte": 1000}},{"_id" : 0, "name": 1, "fans": 1}).sort([("fans", pymongo.DESCENDING)]).limit(10)
+    projects = collection.find({"user_id": userid_one, "friends": { "$elemMatch": { "$eq": userid_two}}})
+    return projects
+    #projects = collection.find({"user_id": userid_one, "friends": userid_two},{"_id": 0, "name" : 1, "friends": 1});
+    json_projects = []
+    #if not projects:
+     #   return "There is a friendship"
+    #connection.close()
+    #return "There is no friendship"
+    for project in projects:
+        json_projects.append(project)
+    json_projects = json.dumps(json_projects, default=json_util.default)
+    connection.close()
+    return render_template("QueryTemplate.html", json_projects=json_projects)
+
+
+############### Largest Review with Largest Specified Review Average#################
+# Query:  Find users with the largest review count and user specified average
+@app.route("/findAvg", methods=['POST'])
+def findAvg():
+    connection = MongoClient(MONGODB_HOST, MONGODB_PORT)
+    collection = connection[DBS_NAME][COLLECTION_NAME]
+
+    avg_review= request.form['avg_review']
+    avg_review = float(avg_review)
+    projects = collection.find({"average_stars": avg_review},{"_id" : 0, "name": 1, "average_stars": 1, "review_count": 1}).sort([("review_count", pymongo.DESCENDING)]).limit(20)
+
+    json_projects = []
+    for project in projects:
+        json_projects.append(project)
+    json_projects = json.dumps(json_projects, default=json_util.default)
+    connection.close()
+    return render_template("QueryTemplate.html", json_projects=json_projects)
+
+############### Find Amount of Friends ##################
+# User Specified: (User Option) Less than, greater than, equal to (User Specified Integer) amount of friends.
+# Query: Find users with more than a user specified amount of friends or less than a user specified amount of friends
+# Stack Overflow for HTML User Input: https://stackoverflow.com/questions/11556958/sending-data-from-html-form-to-a-python-script-in-flask
+# Stack Overflow for gt/lt/eq: https://stackoverflow.com/questions/48847800/mongo-db-aggregation-array-size-greater-than-match
+# Stack Overflow sort Aggregate: https://stackoverflow.com/questions/36566166/sort-the-result-from-a-pymongo-query
+@app.route('/findFriendAmount', methods=['GET', 'POST'])
+def findFriendAmount():
+    connection = MongoClient(MONGODB_HOST, MONGODB_PORT)
+    collection = connection[DBS_NAME][COLLECTION_NAME]
+
+    friendAmount = int(request.form['friendAmount'])
+    select = request.form.get('select_friend')
+    friendAmount = int(friendAmount)
+    # Define projects to fill query based on >, <, or ==
+    projects = collection.aggregate([{ '$project': { 'Count': { '$size': '$friends'}}}])
+    #return friendAmount
+    # Friend_Amount: { $cond: { if: { $isArray: "$friends" }, then: { $size: "$friends" }, else: "NA"} }
+    #projects = collection.aggregate([{ '$project': { "_id" : 0, "name": 1, "friends": 1, 'Friend_Amount': { "$gt": [{ "$size": '$friends' }, friendAmount ]}}}])
+    #projects = list(collection.aggregate(
+  #{ '$group': {'Friend_Amount': { "$gt": [{ "$size": "$friends" }, friendAmount ]}}}))
+    json_projects = []
+    for project in projects:
+        json_projects.append(project)
+    json_projects = json.dumps(json_projects, default=json_util.default)
+    connection.close()
+    return json_projects
+
+####### Most reviews within time of yelping #########
+@app.route("/mostReviewYelping")
+def mostReviewYelping():
+    connection = MongoClient(MONGODB_HOST, MONGODB_PORT)
+    collection = connection[DBS_NAME][COLLECTION_NAME]
+    projects = collection.aggregate([{ '$addFields': { 'date': { '$dateFromString': { 'dateString': '$yelping_since' } }}},  {'$project': { '_id': 1, 'yelping_since': 1, 'dateDifference': {'$divide': ['$review_count', {'$subtract': [ "$$NOW", '$date' ]} ] } } }, { '$limit': 10 } ] )
+    #projects = collection.aggregate([{ '$addFields': { 'date': { '$dateFromString': { 'dateString': '$yelping_since' }}, 'dateDifference': {'$divide': ['$review_count', {'$subtract': [ "$$NOW", '$date' ]} ] }}}, {'$project': { '_id': 1, 'yelping_since': 1, 'dateDifference': 1, 'review_count': 1 } }, { '$limit': 10 } ] )
+    json_projects = []
+    for project in projects:
+        json_projects.append(";")
+        json_projects.append(project)
+    json_projects = json.dumps(json_projects, default=json_util.default)
+    connection.close()
+    return render_template("QueryTemplate.html", json_projects=json_projects)
+
+
+########### find Users who joined in a specific year and how long they've been members ###########
+###############################
+@app.route("/findYearOfYelp", methods=['POST'])  #amount
+def findYearOfYelp():
+    connection = MongoClient(MONGODB_HOST, MONGODB_PORT)
+    collection = connection[DBS_NAME][COLLECTION_NAME]
+    yearOfYelp = int(request.form['yearOfYelp'])
+    #projects = collection.find({"review_count": {"$gte": review_amount}}, {"_id": 0, "name": 1, "review_count": 1}).sort([("fans", pymongo.ASCENDING)]).limit(output_amount)
+    #projects = collection.aggregate([{ '$addFields': { 'date': { '$dateFromString': { 'dateString': '$yelping_since' } }}},  {'$project': { '_id': 1, 'yelping_since': 1, 'dateDifference': {'$divide': ['$review_count', {'$subtract': [ "$$NOW", '$date' ]} ] } } }, { '$limit': 10 } ] )
+    projects = collection.aggregate([
+        { '$addFields': { 
+            'date': { '$dateFromString': { 'dateString': '$yelping_since' }}, 
+            'dateDifference': {'$subtract': [ "$$NOW", {'$dateFromString':{'dateString': '$yelping_since'}} ]}, 
+            'year': {'$year': {'$dateFromString':{'dateString': '$yelping_since'}}} }},
+        {'$match': {'year': yearOfYelp}}, 
+        {'$project': { '_id': 1, 'year': 1, 'yelping_since': 1, 'dateDifference': 1, 'review_count': 1 } }, 
+        { '$limit': 10 } 
+    ]) 
+    #projects = collection.aggregate([{ '$addFields': { 'date': { '$dateFromString': { 'dateString': '$yelping_since' }}, 'dateDifference': {[ "$$NOW", '$date']}}},{'$project': { '_id': 1, 'yelping_since': 1, 'dateDifference': 1, 'review_count': 1 } }, { '$limit': 10 } ] )
+    json_projects = []
+    for project in projects:
+        json_projects.append(project)
+    json_projects = json.dumps(json_projects, default=json_util.default)
+    connection.close()
+
+    return render_template("QueryTemplate.html", json_projects = json_projects)
+
+
+##############################
 @app.route("/readCollection")
 def readCollection():
     connection = MongoClient(MONGODB_HOST, MONGODB_PORT)
@@ -34,14 +240,14 @@ def readCollection():
         json_projects.append(project)
     json_projects = json.dumps(json_projects, default=json_util.default)
     connection.close()
-    return json_projects
+    return render_template("QueryTemplate.html", json_projects=json_projects)
 
 @app.route("/insertCollection")
 def insertCollection():
     #insert_name = request.form['insert_name']
     connection = MongoClient(MONGODB_HOST, MONGODB_PORT)
     collection = connection[DBS_NAME][COLLECTION_NAME]
-    doc = collection.insert({"name":"Charlie Brown 157C", "review_count": 100})
+    doc = collection.insert({"user_id" : "3893724ru923hfl9","name":"Charlie Brown 157C", "review_count": 100})
     #projects = collection.find(projection=FIELDS)
     projects = collection.find({"name":"Charlie Brown 157C"}, {'user_id': 1, 'name': 1, 'review_count': 1, 'yelping_since': 1, 'useful': 1, 'funny': 1, 'cool': 1, 'elite': 1, 'friends': 1, 'fans': 1, 'average_stars': 1, 'compliment_hot': 1, 'compliment_more': 1, 'compliment_profile': 1, 'compliment_cute': 1, 'complement_list': 1, 'compliment_not': 1, 'copmliment_plain': 1, 'compliment_cool': 1, 'compliment_funny': 1, 'compliment_writer': 1, 'compliment_note': 1}).limit(10)
     json_projects = []
@@ -49,123 +255,85 @@ def insertCollection():
         json_projects.append(project)
     json_projects = json.dumps(json_projects, default=json_util.default)
     connection.close()
-    return json_projects 
-    
-    
+    return render_template("QueryTemplate.html", json_projects=json_projects)
 @app.route("/updateCollection")
 def updateCollection():
     connection = MongoClient(MONGODB_HOST, MONGODB_PORT)
     collection = connection[DBS_NAME][COLLECTION_NAME]
-    #doc = collection.update({"name" : "Charlie Brown 157C"}, {"review_count": 101})
+    # doc = collection.update({"name" : "Charlie Brown 157C"}, {"review_count": 101})
     doc = collection.update_one({"name": "Charlie Brown 157C"}, {"$set": {"review_count": 101}})
-    projects = collection.find({"name":"Charlie Brown 157C"}).limit(10)
-    #projects = collection.find({}, {'name': 1}, {$limit:10})
+    projects = collection.find({"name": "Charlie Brown 157C"}).limit(10)
+    # projects = collection.find({}, {'name': 1}, {$limit:10})
     json_projects = []
     for project in projects:
         json_projects.append(project)
     json_projects = json.dumps(json_projects, default=json_util.default)
     connection.close()
-    return json_projects
+    return render_template("QueryTemplate.html", json_projects=json_projects)
+
 
 @app.route("/deleteCollection")
 def deleteCollection():
     connection = MongoClient(MONGODB_HOST, MONGODB_PORT)
     collection = connection[DBS_NAME][COLLECTION_NAME]
-    doc = collection.remove({"name" : "Charlie Brown 157C"})
-    projects = collection.find({"name":"Charlie Brown 157C"}).limit(10)
+    doc = collection.remove({"name": "Charlie Brown 157C"})
+    projects = collection.find({"name": "Charlie Brown 157C"}).limit(10)
     json_projects = []
     for project in projects:
         json_projects.append(project)
     json_projects = json.dumps(json_projects, default=json_util.default)
     connection.close()
-    return json_projects
+    return render_template("QueryTemplate.html", json_projects=json_projects)
 
-@app.route("/findPopularUser")
-def findTina():
-    connection = MongoClient(MONGODB_HOST, MONGODB_PORT)
-    collection = connection[DBS_NAME][COLLECTION_NAME]
-    projects = collection.find({"fans": {"$gte": 1000}},{"_id" : 0, "name": 1, "fans": 1}).sort([("fans", pymongo.DESCENDING)]).limit(10)
-    json_projects = []
-    for project in projects:
-        json_projects.append(project)
-    json_projects = json.dumps(json_projects, default=json_util.default)
-    connection.close()
-    return json_projects
-
-# User Specified: (User Option) Less than, greater than, equal to (User Specified Integer) amount of friends.
-# Query: Find users with more than a user specified amount of friends or less than a user specified amount of friends
-# Stack Overflow for HTML User Input: https://stackoverflow.com/questions/11556958/sending-data-from-html-form-to-a-python-script-in-flask
-# Stack Overflow for gt/lt/eq: https://stackoverflow.com/questions/48847800/mongo-db-aggregation-array-size-greater-than-match
-# Stack Overflow sort Aggregate: https://stackoverflow.com/questions/36566166/sort-the-result-from-a-pymongo-query
-@app.route('/findFriendAmount', methods=['GET', 'POST'])
-def findFriendAmount():
-    connection = MongoClient(MONGODB_HOST, MONGODB_PORT)
-    collection = connection[DBS_NAME][COLLECTION_NAME]
-    
-    friendAmount = request.form['friendAmount']
-    select = request.form.get('select_friend')
-
-    # Define projects to fill query based on >, <, or ==
-    projects = []  
-
-
-    # Friend_Amount: { $cond: { if: { $isArray: "$friends" }, then: { $size: "$friends" }, else: "NA"} }
-
-    projects = collection.aggregate([
-    { $project: { "_id" : 0, "name": 1, "friends": 1, Friend_Amount: { $gt: [{ $size: "$friends" }, friendAmount ]}}},
-    { $match: { moreThanFive : true }}
-    ])
-
-
-    if(select == "eq"):
-        projects = collection.find({"friends": {"$eq": friendAmount}},{"_id" : 0, "name": 1, "friends": 1}).sort([("friends", pymongo.DESCENDING)]).limit(20)
-    elif(select == "lt"):
-        projects = collection.find({"friends": {"$lt": friendAmount}},{"_id" : 0, "name": 1, "friends": 1}).sort([("friends", pymongo.DESCENDING)]).limit(20)
-    else:
-        projects = collection.find({"friends": {"$gt": friendAmount}},{"_id" : 0, "name": 1, "friends": 1}).sort([("friends", pymongo.DESCENDING)]).limit(20)
-
-    json_projects = []
-    for project in projects:
-        json_projects.append(project)
-    json_projects = json.dumps(json_projects, default=json_util.default)
-    connection.close()
-    return json_projects
-
-#yelp.find({"friends": {"$gt": friendAmount}},{"_id" : 0, "name": 1, "friends": 1}).limit(20)
-
-# User Specified: (2) user_id (String > Object ID) >> Return __Name__ has not/been friends with __Name__ for __Years__
-# Query: Find if a user specified Yelp user is a friend of another user specified Yelp user
-@app.route("/findFriendship", methods=['POST'])
-def findFriendship():
-    connection = MongoClient(MONGODB_HOST, MONGODB_PORT)
-    collection = connection[DBS_NAME][COLLECTION_NAME]
-
-    userid_one = request.form['user_id_one']
-    userid_two = request.form['user_id_two']
-
-    #projects = collection.find({"fans": {"$gte": 1000}},{"_id" : 0, "name": 1, "fans": 1}).sort([("fans", pymongo.DESCENDING)]).limit(10)
-    projects = collection.find({"user_id": userid_one, "friends": userid_two});
-    if not projects:
-        return "Nothing here"
-    connection.close()
-    return "Always here"
-
-# Query:  Find users with the largest review count and user specified average
-@app.route("/findAvg", methods=['POST'])
-def findAvg():
-    connection = MongoClient(MONGODB_HOST, MONGODB_PORT)
-    collection = connection[DBS_NAME][COLLECTION_NAME]
-
-    avg_review= request.form['avg_review']
-
-    projects = collection.find({"average_stars": avg_review},{"_id" : 0, "name": 1, "average_stars": 1, "review_count": 1}).sort([("review_count", pymongo.DESCENDING)]).limit(20)
-
-    json_projects = []
-    for project in projects:
-        json_projects.append(project)
-    json_projects = json.dumps(json_projects, default=json_util.default)
-    connection.close()
-    return json_projects
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0',port=5000,debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)
+
+
+'''
+projects = collection.aggregate([
+    { '$addFields': { 'date': { '$dateFromString': { 'dateString': '$yelping_since' }}, 'year':{'$year':'$date'}, 'dateDifference': {[ "$$NOW", '$date' ]} }}, 
+    {'$match': {'year': yearOfYelp}}
+    {'$project': { '_id': 1, 'yelping_since': 1, 'dateDifference': 1, 'review_count': 1 } }, 
+    { '$limit': 10 } ] )
+    
+    { $dateFromString:{dateString: '$yelping_since'}}
+    
+collection.aggregate([{ '$addFields': { 'date': { '$dateFromString': { 'dateString': '$yelping_since' }}, 'dateDifference': {'$divide': ['$review_count', {'$subtract': [ "$$NOW", '$date' ]} ] }}},  {'$project': { '_id': 1, 'yelping_since': 1, '$dateDifference': 1, 'review_count': 1 } }, { '$limit': 10 } ] )
+
+projects = collection.aggregate([{ '$addFields': { 'date': { '$dateFromString': { 'dateString': '$yelping_since' }}, 'dateDifference': {'$divide': ['$review_count', {'$subtract': [ "$$NOW", '$date' ]} ] }}}, {'$sort': {'dateDifference': 1}}, {'$project': { '_id': 1, 'yelping_since': 1, 'dateDifference': 1, 'review_count': 1 } }, { '$limit': 10 } ] )
+    
+
+db.collection.aggregate([
+  { "$addFields": {
+    "date": {
+      "$dateFromString": {
+        "dateString": "$yelping_since"
+      }
+    }
+  }},
+  { "$redact": {
+    "$cond": [
+      { "$lt": [
+        { "$divide": [
+          { "$subtract": [new Date(), "$date"] },
+          1000 * 60 * 60 * 24
+        ]},
+        30
+      ]},
+      "$$KEEP",
+      "$$PRUNE"
+    ]
+  }}
+])
+
+
+db.dates.aggregate([{
+   $project: {
+      date: {
+         $dateFromString: { dateString: '$yelping_since',timezone: 'America/New_York' }
+      }
+   }
+} ] )
+
+'
