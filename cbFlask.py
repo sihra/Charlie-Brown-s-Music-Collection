@@ -6,6 +6,7 @@ import pymongo
 from pymongo import MongoClient
 import json
 from bson import json_util
+from bson.son import SON
 from bson.json_util import dumps
 from bson import ObjectId
 
@@ -133,35 +134,29 @@ def findFriendship():
     userid_one = request.form['user_id_one']
     userid_two = request.form['user_id_two']
     projects = collection.find({"user_id": userid_one},{"_id" : 0, "friends": 1})
-    #swing = " "
-    #for project in projects:
-     #   swing = swing + str(project)
-    #projects = str(colliection.aggregate([
-    #{"$match" : {"user_id": userid_one}},
-    #{"$project": { "user_id": 1, "friends": 1}}]))
-    #return (swing + "here")
-    #projects = collection.find({ "user_id": userid_one, "friends": {"$in": ["DNmeLov3wXNxlxjN5feBoQ", "$friends"]}})
-    #projects = collection.find({"user_id": userid_one, "friends": { "$elemMatch": { "$eq": userid_two}}})
-    #projects = collection.find({"user_id": userid_one, "friends": userid_two},{"_id": 0, "name" : 1, "friends": 1});
     json_projects = []
-    #if not projects:
-     #   return "There is a friendship"
-    #connection.close()
-    #return "There is no friendship"
     for project in projects:
         json_projects.append(project)
     json_projects = json.dumps(json_projects, default=json_util.default)
     friends = (str(json_projects)[14:-3]).split(',')
-    g = ""
+    areTheyFriends = False
     for friend in friends:
-        g = g + friend  + " zZUnPeh2hEp0WydbAZEOOg   "
         if(friend.strip() == userid_two.strip()):
-            return "They are friends"    
+            areTheyFriends = True    
     json_projectst = []
-    projectst = collection.aggregate([
-        { '$addFields': {'Relationship_Status': True}},
-    {"$match" : {"user_id": userid_one}},
-    {"$project": { "user_id": 1, "friends": 1, "Relationship_Status": 1}}])
+    projectst = []
+    if(areTheyFriends == True):
+        projectst = collection.aggregate([
+            {'$addFields': {'Relationship_Status': True, 'First_User': userid_one, 'Second_User': userid_two}},
+            {"$match" : {"user_id": userid_one}},
+            {"$project": { "First_User": 1, "Second_User": 1, "Relationship_Status": 1, "friends": 1}}
+        ])
+    else:
+        projectst = collection.aggregate([
+            {'$addFields': {'Relationship_Status': False, 'First_User': userid_one, 'Second_User': userid_two}},
+            {"$match" : {"user_id": userid_one}},
+            {"$project": { "Second_User": 1, "First_User": 1, "Relationship_Status": 1, "friends": 1}}
+        ])
     for project in projectst:
         json_projectst.append(project)
     json_projectst = json.dumps(json_projectst, default=json_util.default)
@@ -190,9 +185,6 @@ def findAvg():
 ############### Find Amount of Friends ##################
 # User Specified: (User Option) Less than, greater than, equal to (User Specified Integer) amount of friends.
 # Query: Find users with more than a user specified amount of friends or less than a user specified amount of friends
-# Stack Overflow for HTML User Input: https://stackoverflow.com/questions/11556958/sending-data-from-html-form-to-a-python-script-in-flask
-# Stack Overflow for gt/lt/eq: https://stackoverflow.com/questions/48847800/mongo-db-aggregation-array-size-greater-than-match
-# Stack Overflow sort Aggregate: https://stackoverflow.com/questions/36566166/sort-the-result-from-a-pymongo-query
 @app.route('/findFriendAmount', methods=['GET', 'POST'])
 def findFriendAmount():
     connection = MongoClient(MONGODB_HOST, MONGODB_PORT)
@@ -201,35 +193,50 @@ def findFriendAmount():
     friendAmount = int(request.form['friendAmount'])
     select = request.form.get('select_friend')
     friendAmount = int(friendAmount)
+
+    projects = []
     # Define projects to fill query based on >, <, or ==
-    #projects = collection.aggregate([ { '$match': {'friends': } },
-    
-    projects = collection.aggregate([
-        { '$addFields': {'friend_amount': {"$split": ["$friends", ","]} }},
-        {'$match': {'friends': {"$exists": True}} }, { '$project': {'my_array_length': {"$size": '$friend_amount'}}},{'$sort': {"friend_amount": 1 }}, { '$limit': 10 }])
-    
-    #projects = collection.aggregate([ { '$match': {'friends': {"$exists": True}} }, { '$project': {'my_array_length': {"$size": '$friends'}}}, { '$limit': 10 }])
-    #projects = collection.find({"$and": [{"friends": {"$exists": True}}, {"user_id": {"$exists" : True }}]}, {"friends":1}).limit(20)
-    #projects = collection.aggregate([{'$project': { 'Count': { '$size': '$friends'}}}])
-    #return friendAmount
-    # Friend_Amount: { $cond: { if: { $isArray: "$friends" }, then: { $size: "$friends" }, else: "NA"} }
-    #projects = collection.aggregate([{ '$project': { "_id" : 0, "name": 1, "friends": 1, 'Friend_Amount': { "$gt": [{ "$size": '$friends' }, friendAmount ]}}}])
-    #projects = list(collection.aggregate(
-  #{ '$group': {'Friend_Amount': { "$gt": [{ "$size": "$friends" }, friendAmount ]}}}))
+    if(select == "eq"):
+        projects = collection.aggregate([
+            {'$addFields': {'Friend_Amount': {"$size": {"$split": ["$friends", ","]}}}},
+            {'$match': {'friends': {"$exists": True}, 'Friend_Amount': {"$eq": friendAmount}} },
+            {'$project': {'user_id': 1, 'name': 1, 'Friend_Amount': 1}},
+            {'$limit': 10 }
+        ])
+    elif(select == "gt"):
+        projects = collection.aggregate([
+            {'$addFields': {'Friend_Amount': {"$size": {"$split": ["$friends", ","]}}}},
+            {'$match': {'friends': {"$exists": True}, 'Friend_Amount': {"$gt": friendAmount}} },
+            {'$project': {'user_id': 1, 'name': 1, 'Friend_Amount': 1}},
+            {'$sort': SON([('Friend_Amount', -1)])},
+            {'$limit': 10 }
+        ])
+    elif(select == "lt"):
+        projects = collection.aggregate([
+            {'$addFields': {'Friend_Amount': {"$size": {"$split": ["$friends", ","]}}}},
+            {'$match': {'friends': {"$exists": True}, 'Friend_Amount': {"$lt": friendAmount}} },
+            {'$project': {'user_id': 1, 'name': 1, 'Friend_Amount': 1}},
+            {'$sort': SON([('Friend_Amount', -1)])},
+            {'$limit': 10 }
+        ])
     json_projects = []
     for project in projects:
         json_projects.append(project)
     json_projects = json.dumps(json_projects, default=json_util.default)
     connection.close()
-    return json_projects
+    return render_template("QueryTemplate.html", json_projects=json_projects)
 
 ####### Most reviews within time of yelping #########
 @app.route("/mostReviewYelping")
 def mostReviewYelping():
     connection = MongoClient(MONGODB_HOST, MONGODB_PORT)
     collection = connection[DBS_NAME][COLLECTION_NAME]
-    projects = collection.aggregate([{ '$addFields': { 'date': { '$dateFromString': { 'dateString': '$yelping_since' } }}},  {'$project': { '_id': 1, 'yelping_since': 1, 'dateDifference': {'$divide': ['$review_count', {'$subtract': [ "$$NOW", '$date' ]} ] } } }, { '$limit': 10 } ] )
-    #projects = collection.aggregate([{ '$addFields': { 'date': { '$dateFromString': { 'dateString': '$yelping_since' }}, 'dateDifference': {'$divide': ['$review_count', {'$subtract': [ "$$NOW", '$date' ]} ] }}}, {'$project': { '_id': 1, 'yelping_since': 1, 'dateDifference': 1, 'review_count': 1 } }, { '$limit': 10 } ] )
+    projects = collection.aggregate([
+        {'$addFields': { 'Ratio_Of_Reviews_As_Yelp_Member': {'$divide': ['$review_count', {'$subtract': [ "$$NOW", { '$dateFromString': { 'dateString': '$yelping_since' }}]}]} }},  
+        {'$project': { 'name': 1, '_id': 1, 'yelping_since': 1, 'review_count': 1, 'Ratio_Of_Reviews_As_Yelp_Member': 1}}, 
+        {'$sort': SON([('Ratio_Of_Reviews_As_Yelp_Member', -1)])},
+        {'$limit': 30 } 
+    ])
     json_projects = []
     for project in projects:
         json_projects.append(";")
@@ -240,30 +247,26 @@ def mostReviewYelping():
 
 
 ########### find Users who joined in a specific year and how long they've been members ###########
-###############################
 @app.route("/findYearOfYelp", methods=['POST'])  #amount
 def findYearOfYelp():
     connection = MongoClient(MONGODB_HOST, MONGODB_PORT)
     collection = connection[DBS_NAME][COLLECTION_NAME]
     yearOfYelp = int(request.form['yearOfYelp'])
-    #projects = collection.find({"review_count": {"$gte": review_amount}}, {"_id": 0, "name": 1, "review_count": 1}).sort([("fans", pymongo.ASCENDING)]).limit(output_amount)
-    #projects = collection.aggregate([{ '$addFields': { 'date': { '$dateFromString': { 'dateString': '$yelping_since' } }}},  {'$project': { '_id': 1, 'yelping_since': 1, 'dateDifference': {'$divide': ['$review_count', {'$subtract': [ "$$NOW", '$date' ]} ] } } }, { '$limit': 10 } ] )
     projects = collection.aggregate([
         { '$addFields': { 
             'date': { '$dateFromString': { 'dateString': '$yelping_since' }}, 
-            'dateDifference': {'$subtract': [ "$$NOW", {'$dateFromString':{'dateString': '$yelping_since'}} ]}, 
-            'year': {'$year': {'$dateFromString':{'dateString': '$yelping_since'}}} }},
-        {'$match': {'year': yearOfYelp}}, 
-        {'$project': { '_id': 1, 'year': 1, 'yelping_since': 1, 'dateDifference': 1, 'review_count': 1 } }, 
-        { '$limit': 10 } 
+            'Days_Since_Yelping': {'$subtract': [ "$$NOW", {'$dateFromString':{'dateString': '$yelping_since'}} ]}, 
+            'Year': {'$year': {'$dateFromString':{'dateString': '$yelping_since'}}} }},
+        {'$match': {'Year': yearOfYelp}}, 
+        {'$project': { '_id': 1, 'Year': 1, 'yelping_since': 1, 'Days_Since_Yelping': 1, 'review_count': 1 } }, 
+        {'$sort': SON([('Days_Since_Yelping', -1)])},        
+        {'$limit': 30} 
     ]) 
-    #projects = collection.aggregate([{ '$addFields': { 'date': { '$dateFromString': { 'dateString': '$yelping_since' }}, 'dateDifference': {[ "$$NOW", '$date']}}},{'$project': { '_id': 1, 'yelping_since': 1, 'dateDifference': 1, 'review_count': 1 } }, { '$limit': 10 } ] )
     json_projects = []
     for project in projects:
         json_projects.append(project)
     json_projects = json.dumps(json_projects, default=json_util.default)
     connection.close()
-
     return render_template("QueryTemplate.html", json_projects = json_projects)
 
 
